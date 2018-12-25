@@ -16,7 +16,7 @@ public class Main {
     static int index = 0;
     static HashMap<Integer, Tank> tanks;
 
-    public static void main(String[] args) throws IOException, JSONException {
+    public static void main(String[] args) throws IOException {
 
         tanks = new HashMap<>();
         DatagramSocket socket = new DatagramSocket(5000);
@@ -25,60 +25,65 @@ public class Main {
         new Thread(upd).start();
 
         while(true) {
-            byte[] buffer = new byte[1000000];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+            try {
+                byte[] buffer = new byte[1000000];
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-            socket.receive(packet);
-            buffer = packet.getData();
+                socket.receive(packet);
+                buffer = packet.getData();
 
-            int last = 0;
-            for(; last < buffer.length; ++last) if(buffer[last] == 0) break;
+                int last = 0;
+                for (; last < buffer.length; ++last) if (buffer[last] == 0) break;
 
-            String s = new String(buffer, 0, last);
-            System.out.println(packet.getAddress() + "  " + s);
-            JSONObject obj = new JSONObject(s);
+                String s = new String(buffer, 0, last);
+                System.out.println(packet.getAddress() + "  " + s);
+                JSONObject obj = new JSONObject(s);
 
-            if(obj.getString("type").equals("CREATE")) {
-                //создаем танк
-                Tank tank = new Tank(packet.getAddress(), index++);
+                if (obj.getString("type").equals("CREATE")) {
+                    //создаем танк
+                    Tank tank = new Tank(packet.getAddress(), index++);
 
-                // информируем всех игроков о подключении нового игрока
-                for(Tank t : tanks.values()) {
-                    JSONObject request = new JSONObject();
-                    request.put("type", "ADD");
-                    request.put("index", tank.id);
-                    request.put("x", tank.getX());
-                    request.put("y", tank.getY());
-                    request.put("direction", tank.getDirection());
-                    send(request.toString(), socket, t.address);
+                    // информируем всех игроков о подключении нового игрока
+                    for (Tank t : tanks.values()) {
+                        JSONObject request = new JSONObject();
+                        request.put("type", "ADD");
+                        request.put("index", tank.id);
+                        request.put("x", tank.getX());
+                        request.put("y", tank.getY());
+                        request.put("direction", tank.getDirection());
+                        send(request.toString(), socket, t.address);
+                    }
+
+                    //добавляем в список нового клиента
+                    tanks.put(tank.id, tank);
+
+
+                    //говорим новому клиенту его id и инфу об остальных гроках
+                    obj = new JSONObject();
+                    obj.put("type", "CREATED");
+                    obj.put("index", tank.id);
+                    obj.put("TANKS", getAllTanks());
+                    send(obj.toString(), socket, tank.address);
+                } else {
+                    int id = obj.getInt("index");
+
+                    if (obj.getString("type").equals("GET")) {
+                        JSONObject request = new JSONObject();
+                        request.put("check_code", obj.getInt("check_code"));
+                        request.put("type", "UPDATE");
+                        request.put("TANKS", getAllTanks());
+
+                        send(request.toString(), socket, packet.getAddress());
+                    }
+
+                    if (obj.getString("type").equals("UPDATE")) {
+                        int direction = obj.getInt("direction");
+                        tanks.get(id).setDirection(direction);
+                    }
+
                 }
-
-                //добавляем в список нового клиента
-                tanks.put(tank.id, tank);
-
-
-                //говорим новому клиенту его id и инфу об остальных гроках
-                obj = new JSONObject();
-                obj.put("index", tank.id);
-                obj.put("TANKS", getAllTanks());
-                send(obj.toString(), socket, tank.address);
-            } else {
-                int id = obj.getInt("index");
-
-                if(obj.getString("type").equals("GET")) {
-                    JSONObject request = new JSONObject();
-                    request.put("check_code", obj.getInt("check_code"));
-                    request.put("type", "UPDATE");
-                    request.put("TANKS", getAllTanks());
-
-                    send(request.toString(), socket, packet.getAddress());
-                }
-
-                if(obj.getString("type").equals("UPDATE")) {
-                    int direction = obj.getInt("direction");
-                    tanks.get(id).setDirection(direction);
-                }
-
+            } catch(JSONException e) {
+                e.printStackTrace();
             }
         }
 
@@ -164,36 +169,14 @@ class Tank {
 
             last = cur;
 
-            //System.out.println(direction);
-
             if(direction == 1) y += speed * dt / 1000.0;
             if(direction == 2) y -= speed * dt / 1000.0;
             if(direction == 3) x -= speed * dt / 1000.0;
             if(direction == 4) x += speed * dt / 1000.0;
 
+
             x = ((int)(x * 1000)) /(float)(1000);
             y = ((int)(y * 1000)) /(float)(1000);
         }
     }
-
-	/*@Override
-	public void run() {
-		synchronized(this) {
-			while(true) {
-				//System.out.println(direction);
-				cur = System.currentTimeMillis();
-				dt = cur - last;
-
-				last = cur;
-
-				//System.out.println(direction);
-
-				if(direction == 1) y += speed * dt / 1000.0;
-				if(direction == 2) y -= speed * dt / 1000.0;
-				if(direction == 3) x -= speed * dt / 1000.0;
-				if(direction == 4) x += speed * dt / 1000.0;
-			}
-		}
-	}*/
-
 }
