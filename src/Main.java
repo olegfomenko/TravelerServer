@@ -1,7 +1,9 @@
+import java.awt.image.AreaAveragingScaleFilter;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.json.JSONArray;
@@ -15,10 +17,18 @@ public class Main {
 
     static int index = 0;
     static HashMap<Integer, Tank> tanks;
+    static ArrayList<Wall> walls;
 
     public static void main(String[] args) throws IOException {
 
         tanks = new HashMap<>();
+        walls = new ArrayList<>();
+
+        walls.add(new Wall(1000, 1000, 20, 1000));
+        walls.add(new Wall(1000, 1000, 1000, 20));
+        walls.add(new Wall(1000, 2000, 1000, 20));
+        walls.add(new Wall(2000, 1000, 20, 1020));
+
         DatagramSocket socket = new DatagramSocket(5000);
 
         Updater upd = new Updater();
@@ -41,7 +51,7 @@ public class Main {
 
                 if (obj.getString("type").equals("CREATE")) {
                     //создаем танк
-                    Tank tank = new Tank(packet.getAddress(), index++);
+                    Tank tank = new Tank(packet.getAddress(), index++, walls);
 
                     // информируем всех игроков о подключении нового игрока
                     for (Tank t : tanks.values()) {
@@ -63,6 +73,7 @@ public class Main {
                     obj.put("type", "CREATED");
                     obj.put("index", tank.id);
                     obj.put("TANKS", getAllTanks());
+                    obj.put("WALLS", getAllWalls());
                     send(obj.toString(), socket, tank.address);
                 } else {
                     int id = obj.getInt("index");
@@ -108,6 +119,20 @@ public class Main {
         return arr;
     }
 
+    private static JSONArray getAllWalls() throws JSONException {
+        JSONArray arr = new JSONArray();
+        for(Wall w : walls) {
+            JSONObject wo = new JSONObject();
+            wo.put("x", w.getX());
+            wo.put("y", w.getY());
+            wo.put("width", w.getWidth());
+            wo.put("height", w.getHeight());
+            arr.put(wo);
+        }
+
+        return arr;
+    }
+
     static class Updater implements Runnable {
 
         @Override
@@ -131,19 +156,60 @@ public class Main {
 
 }
 
+class Wall {
+    private float x, y, width, height;
+
+    public Wall(float x, float y, float width, float height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public float getWidth() {
+        return width;
+    }
+
+    public float getHeight() {
+        return height;
+    }
+
+    public boolean check(Tank t) {
+        return  (x <= t.getX() && t.getX() <= x + width) && (y <= t.getY() && t.getY() <= y + height) ||
+                (x <= t.getX() && t.getX() <= x + width) && (y <= t.getY() + Tank.height && t.getY() + Tank.height <= y + height) ||
+                (x <= t.getX() + Tank.width &&  t.getX() + Tank.width <= x + width) && (y <= t.getY() && t.getY() <= y + height) ||
+                (x <= t.getX() + Tank.width &&  t.getX() + Tank.width <= x + width) && (y <= t.getY() + Tank.height && t.getY() + Tank.height <= y + height);
+    }
+}
+
 
 class Tank {
-
     InetAddress address;
     int id;
     private volatile float x = 1500, y = 1500;
+    public static final float width = 64, height = 64;
     private volatile int direction = 1; // если один поток измемняет это на объекте, то оно изменяется и на другом потоке
     long last = System.currentTimeMillis(), cur, dt;
     long speed = 120;
+    ArrayList<Wall> walls;
 
-    public Tank(InetAddress address, int id) {
+    public Tank(InetAddress address, int id, ArrayList<Wall> walls) {
         this.address = address;
         this.id = id;
+        this.walls = walls;
+
+        x = (float)(1050 + Math.random() * 900);
+        y = (float)(1050 + Math.random() * 900);
+
+        direction = (int)(1 + Math.random() * 4);
     }
 
     public synchronized void setDirection(int direction) {
@@ -177,6 +243,16 @@ class Tank {
 
             x = ((int)(x * 1000)) /(float)(1000);
             y = ((int)(y * 1000)) /(float)(1000);
+
+            for (Wall w : walls) if(w.check(this)) {
+                switch (direction) {
+                    case 1: direction = 2; break;
+                    case 2: direction = 1; break;
+                    case 3: direction = 4; break;
+                    case 4: direction = 3; break;
+                }
+                break;
+            }
         }
     }
 }
