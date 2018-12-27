@@ -1,5 +1,4 @@
-import java.awt.image.AreaAveragingScaleFilter;
-import java.io.IOException;
+    import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -24,10 +23,10 @@ public class Main {
         tanks = new HashMap<>();
         walls = new ArrayList<>();
 
-        walls.add(new Wall(1000, 1000, 20, 1000));
-        walls.add(new Wall(1000, 1000, 1000, 20));
-        walls.add(new Wall(1000, 2000, 1000, 20));
-        walls.add(new Wall(2000, 1000, 20, 1020));
+        walls.add(new Wall(1000, 1000, 50, 1000));
+        walls.add(new Wall(1000, 1000, 1000, 50));
+        walls.add(new Wall(1000, 2000, 1000, 50));
+        walls.add(new Wall(2000, 1000, 50, 1050));
 
         DatagramSocket socket = new DatagramSocket(5000);
 
@@ -53,7 +52,7 @@ public class Main {
                     //создаем танк
                     Tank tank = new Tank(packet.getAddress(), index++, walls);
 
-                    // информируем всех игроков о подключении нового игрока
+                    /*// информируем всех игроков о подключении нового игрока
                     for (Tank t : tanks.values()) {
                         JSONObject request = new JSONObject();
                         request.put("type", "ADD");
@@ -62,7 +61,7 @@ public class Main {
                         request.put("y", tank.getY());
                         request.put("direction", tank.getDirection());
                         send(request.toString(), socket, t.address);
-                    }
+                    }*/
 
                     //добавляем в список нового клиента
                     tanks.put(tank.id, tank);
@@ -206,8 +205,8 @@ class Tank {
         this.id = id;
         this.walls = walls;
 
-        x = (float)(1050 + Math.random() * 900);
-        y = (float)(1050 + Math.random() * 900);
+        x = (float)(1100 + Math.random() * 800);
+        y = (float)(1100 + Math.random() * 800);
 
         direction = (int)(1 + Math.random() * 4);
     }
@@ -230,6 +229,17 @@ class Tank {
 
     public synchronized void update() {
         synchronized(this) {
+            for (Wall w : walls) if(w.check(this)) {
+                switch (direction) {
+                    case 1: direction = 2; break;
+                    case 2: direction = 1; break;
+                    case 3: direction = 4; break;
+                    case 4: direction = 3; break;
+                }
+                break;
+            }
+
+
             cur = System.currentTimeMillis();
             dt = cur - last;
 
@@ -243,16 +253,6 @@ class Tank {
 
             x = ((int)(x * 1000)) /(float)(1000);
             y = ((int)(y * 1000)) /(float)(1000);
-
-            for (Wall w : walls) if(w.check(this)) {
-                switch (direction) {
-                    case 1: direction = 2; break;
-                    case 2: direction = 1; break;
-                    case 3: direction = 4; break;
-                    case 4: direction = 3; break;
-                }
-                break;
-            }
         }
     }
 }
