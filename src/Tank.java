@@ -51,10 +51,10 @@ public class Tank extends GameObject {
 
             synchronized (balls) {
                 switch (getDirection()) {
-                    case 1: balls.add(new Ball(getX() + getWidth() / 2, getY() + getHeight() + 10, 1, walls)); break;
-                    case 2: balls.add(new Ball(getX() + getWidth() / 2, getY() - 10, 2, walls)); break;
-                    case 3: balls.add(new Ball(getX() - 10, getY() + getHeight() / 2, 3, walls)); break;
-                    case 4: balls.add(new Ball(getX() + getWidth() + 10, getY() + getHeight() / 2, 4, walls)); break;
+                    case 1: balls.add(new Ball(getX() + getWidth() / 2 - 8, getY() + getHeight() + 10, 1, walls)); break;
+                    case 2: balls.add(new Ball(getX() + getWidth() / 2 - 8, getY() - 10 - 16, 2, walls)); break;
+                    case 3: balls.add(new Ball(getX() - 10 - 16, getY() + getHeight() / 2 - 8, 3, walls)); break;
+                    case 4: balls.add(new Ball(getX() + getWidth() + 10, getY() + getHeight() / 2 - 8, 4, walls)); break;
                 }
             }
         }

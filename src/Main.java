@@ -25,7 +25,7 @@ import org.json.JSONObject;
         walls.add(new Wall(1000, 1000, 1000, 50));
         walls.add(new Wall(1000, 2000, 1000, 50));
         walls.add(new Wall(2000, 1000, 50, 1050));
-
+    
         DatagramSocket socket = new DatagramSocket(5000);
 
         Updater upd = new Updater();
@@ -82,9 +82,10 @@ import org.json.JSONObject;
                 }
             } catch(JSONException e) {
                 e.printStackTrace();
+            } catch (NullPointerException e) {
+                e.printStackTrace();
             }
         }
-
     }
 
     private static void send(String request, DatagramSocket socket, InetAddress address) throws IOException {
@@ -143,41 +144,26 @@ import org.json.JSONObject;
         return arr;
     }
 
-    /*static class Send implements Runnable {
-        private JSONObject request;
-        private DatagramSocket socket;
-        private InetAddress address;
-
-        public Send(JSONObject request, DatagramSocket socket, InetAddress address) {
-            this.request = request;
-            this.socket = socket;
-            this.address = address;
-        }
-
-        @Override
-        public void run() {
-            try {
-                byte[] buffer = request.toString().getBytes();
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 5000);
-                socket.send(packet);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }*/
-
     static class Updater implements Runnable {
 
         @Override
         public void run() {
             while(true) {
-                Object[] o = tanks.values().toArray();
-                for(int i = 0; i < o.length; ++i) {
-                    Tank t = (Tank)o[i];
-                    t.update();
+                ArrayList<Tank> tl;
+                synchronized (tanks) {
+                    tl = new ArrayList<>(tanks.values());
                 }
+                for(int i = 0; i < tl.size(); ++i) tl.get(i).update();
 
                 for(int i = 0; i < balls.size(); ++i) balls.get(i).update();
+
+                for(int i = 0; i < tl.size(); ++i)
+                    for(int j = 0; j < balls.size(); ++j)
+                        if(tl.get(i).check(balls.get(j))) synchronized (tanks) {
+                            System.out.println(tl.get(i).getId() + " has been removed!");
+                            tanks.remove(tl.get(i).getId());
+                            break;
+                        }
 
                 try {
                     Thread.sleep(10);

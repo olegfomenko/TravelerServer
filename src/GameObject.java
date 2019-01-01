@@ -42,6 +42,13 @@ public class GameObject {
         return dt;
     }
 
+    public boolean check(GameObject t) {
+        return  (x <= t.getX() && t.getX() <= x + width) && (y <= t.getY() && t.getY() <= y + height) ||
+                (x <= t.getX() && t.getX() <= x + width) && (y <= t.getY() + t.getHeight() && t.getY() + t.getHeight() <= y + height) ||
+                (x <= t.getX() + t.getWidth() &&  t.getX() + t.getWidth() <= x + width) && (y <= t.getY() && t.getY() <= y + height) ||
+                (x <= t.getX() + t.getWidth() &&  t.getX() + t.getWidth() <= x + width) && (y <= t.getY() + t.getHeight() && t.getY() + t.getHeight() <= y + height);
+    }
+
     public synchronized void update() {
         cur = System.currentTimeMillis();
         dt = cur - last;

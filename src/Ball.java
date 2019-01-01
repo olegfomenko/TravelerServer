@@ -7,7 +7,7 @@ public class Ball extends GameObject {
     private static int last = 0;
 
     public Ball(float x, float y, int direction, ArrayList<Wall> walls) {
-        super(x, y, 15, 15, direction,180);
+        super(x, y, 16, 16, direction,180);
         this.walls = walls;
         id = last++;
     }
