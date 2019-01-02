@@ -2,15 +2,16 @@
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.ArrayList;
+    import java.net.SocketAddress;
+    import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-    import org.omg.CORBA.PUBLIC_MEMBER;
 
-    public class Main {
+
+public class Main {
     static volatile HashMap<Integer, Tank> tanks;
     static volatile ArrayList<Wall> walls;
     static volatile ArrayList<Ball> balls;
@@ -27,6 +28,7 @@ import org.json.JSONObject;
         walls.add(new Wall(2000, 1000, 50, 1050));
     
         DatagramSocket socket = new DatagramSocket(5000);
+        socket.setBroadcast(true);
 
         Updater upd = new Updater();
         new Thread(upd).start();
@@ -43,12 +45,12 @@ import org.json.JSONObject;
                 for (; last < buffer.length; ++last) if (buffer[last] == 0) break;
 
                 String s = new String(buffer, 0, last);
-                System.out.println(packet.getAddress() + "  " + s);
+                System.out.println(packet.getAddress() + "  " + packet.getPort() + " " + s);
                 JSONObject obj = new JSONObject(s);
 
                 if (obj.getString("type").equals("CREATE")) {
                     //создаем танк
-                    Tank tank = new Tank(packet.getAddress(), walls, balls);
+                    Tank tank = new Tank(packet.getAddress(), packet.getPort(), walls, balls);
                     tanks.put(tank.getId(), tank);
 
 
@@ -60,7 +62,8 @@ import org.json.JSONObject;
                     obj.put("WALLS", getAllWalls());
                     obj.put("BALLS", getAllBalls());
 
-                    send(obj.toString(), socket, tank.getAddress());
+
+                    send(obj.toString(), socket, tank.getAddress(), tank.getPort());
                 } else {
                     int id = obj.getInt("i");
 
@@ -71,7 +74,7 @@ import org.json.JSONObject;
                         request.put("TANKS", getAllTanks());
                         request.put("BALLS", getAllBalls());
 
-                        send(request.toString(), socket, packet.getAddress());
+                        send(request.toString(), socket, packet.getAddress(), packet.getPort());
                     }
 
                     if (obj.getString("type").equals("UPDATE")) {
@@ -88,9 +91,9 @@ import org.json.JSONObject;
         }
     }
 
-    private static void send(String request, DatagramSocket socket, InetAddress address) throws IOException {
+    private static void send(String request, DatagramSocket socket, InetAddress address, int port) throws IOException {
         byte[] buffer = request.getBytes();
-        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, 5000);
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
         socket.send(packet);
     }
 

@@ -3,6 +3,7 @@ import java.util.ArrayList;
 
 public class Tank extends GameObject {
     private InetAddress address;
+    private int port;
     private static int last = 0;
     private int id;
     private ArrayList<Wall> walls;
@@ -10,13 +11,18 @@ public class Tank extends GameObject {
 
     private long ball_delta;
 
-    public Tank(InetAddress address, ArrayList<Wall> walls, ArrayList<Ball> balls) {
+    public Tank(InetAddress address, int port, ArrayList<Wall> walls, ArrayList<Ball> balls) {
         super((float)(1100 + Math.random() * 800), (float)(1100 + Math.random() * 800), 64, 64, (int)(1 + Math.random() * 4), 120);
         this.address = address;
+        this.port = port;
         this.walls = walls;
         this.balls = balls;
 
         id = last++;
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public int getId() {
