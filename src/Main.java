@@ -37,7 +37,6 @@ public class Main {
             try {
                 byte[] buffer = new byte[1000000];
                 DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-
                 socket.receive(packet);
                 buffer = packet.getData();
 
@@ -94,6 +93,7 @@ public class Main {
     private static void send(String request, DatagramSocket socket, InetAddress address, int port) throws IOException {
         byte[] buffer = request.getBytes();
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
+
         socket.send(packet);
     }
 
