@@ -1,20 +1,23 @@
-    import java.io.IOException;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-    import java.net.SocketAddress;
-    import java.util.ArrayList;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import javax.xml.crypto.Data;
+
 
 public class Main {
     static volatile HashMap<Integer, Tank> tanks;
     static volatile ArrayList<Wall> walls;
     static volatile ArrayList<Ball> balls;
+
+    static volatile DatagramSocket socket;
 
     public static void main(String[] args) throws IOException {
 
@@ -27,17 +30,30 @@ public class Main {
         walls.add(new Wall(1000, 2000, 1000, 50));
         walls.add(new Wall(2000, 1000, 50, 1050));
     
-        DatagramSocket socket = new DatagramSocket(5000);
+        socket = new DatagramSocket(5000);
         socket.setBroadcast(true);
 
         Updater upd = new Updater();
         new Thread(upd).start();
 
         while(true) {
+            byte[] buffer = new byte[1000000];
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+            socket.receive(packet);
+            new Thread(new Handler(packet)).start();
+        }
+    }
+
+    static class Handler implements Runnable {
+        DatagramPacket packet;
+
+        public Handler(DatagramPacket packet) {
+            this.packet = packet;
+        }
+
+        public void run() {
             try {
-                byte[] buffer = new byte[1000000];
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet);
+                byte[] buffer;
                 buffer = packet.getData();
 
                 int last = 0;
@@ -85,6 +101,8 @@ public class Main {
             } catch(JSONException e) {
                 e.printStackTrace();
             } catch (NullPointerException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
